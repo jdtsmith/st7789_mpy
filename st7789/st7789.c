@@ -818,18 +818,21 @@ STATIC mp_obj_t st7789_ST7789_text(size_t n_args, const mp_obj_t *args)
 		fg_color = _swap_bytes(WHITE);
 
 	if (n_args > 6)
-		bg_color = _swap_bytes(mp_obj_get_int(args[6]));
+		if (args[6] == mp_const_none)
+			bg_color = -1;
+		else
+			bg_color = _swap_bytes(mp_obj_get_int(args[6]));
 	else
 		bg_color = _swap_bytes(BLACK);
 
 	uint8_t	 wide	  = width / 8;
 	uint16_t buf_size = width * height * 2;
 
-	if (self->buffer_size == 0) {
+	if (self->buffer_size == 0 && bg_color >= 0) {
 		self->i2c_buffer = m_malloc(buf_size);
 	}
 
-	if (self->i2c_buffer) {
+	if (self->i2c_buffer || bg_color < 0 ) {
 		uint8_t chr;
 		while ((chr = *str++)) {
 			if (chr >= first && chr <= last) {
@@ -840,26 +843,33 @@ STATIC mp_obj_t st7789_ST7789_text(size_t n_args, const mp_obj_t *args)
 						uint8_t chr_data = font_data[chr_idx];
 						for (uint8_t bit = 8; bit; bit--) {
 							if (chr_data >> (bit - 1) & 1)
-								self->i2c_buffer[buf_idx] = fg_color;
+								if (bg_color < 0)
+									draw_pixel(self, x0 + buf_idx % wide,
+										   y0 + buf_idx/wide, fg_color);
+								else
+									self->i2c_buffer[buf_idx] = fg_color;
 							else
-								self->i2c_buffer[buf_idx] = bg_color;
+								if (bg_color >= 0)
+									self->i2c_buffer[buf_idx] = bg_color;
 							buf_idx++;
 						}
 						chr_idx++;
 					}
 				}
-				uint16_t x1 = x0 + width - 1;
-				if (x1 < self->width) {
+				if (bg_color >= 0) {
+				    uint16_t x1 = x0 + width - 1;
+				    if (x1 < self->width) {
 					set_window(self, x0, y0, x1, y0 + height - 1);
 					DC_HIGH();
 					CS_LOW();
 					write_spi(self->spi_obj, (uint8_t *) self->i2c_buffer, buf_size);
 					CS_HIGH();
+				    }
+				    x0 += width;
 				}
-				x0 += width;
 			}
 		}
-		if (self->buffer_size == 0) {
+		if (self->buffer_size == 0 && bg_color >= 0) {
 			m_free(self->i2c_buffer);
 		}
 	}
