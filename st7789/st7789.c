@@ -844,8 +844,8 @@ STATIC mp_obj_t st7789_ST7789_text(size_t n_args, const mp_obj_t *args)
 						for (uint8_t bit = 8; bit; bit--) {
 							if (chr_data >> (bit - 1) & 1)
 								if (bg_color < 0)
-									draw_pixel(self, x0 + buf_idx % wide,
-										   y0 + buf_idx/wide, fg_color);
+									draw_pixel(self, x0 + buf_idx % width,
+										   y0 + buf_idx/width, fg_color);
 								else
 									self->i2c_buffer[buf_idx] = fg_color;
 							else
