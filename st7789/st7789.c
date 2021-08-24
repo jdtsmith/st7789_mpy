@@ -865,8 +865,8 @@ STATIC mp_obj_t st7789_ST7789_text(size_t n_args, const mp_obj_t *args)
 					write_spi(self->spi_obj, (uint8_t *) self->i2c_buffer, buf_size);
 					CS_HIGH();
 				    }
-				    x0 += width;
 				}
+				x0 += width;
 			}
 		}
 		if (self->buffer_size == 0 && bg_color >= 0) {
